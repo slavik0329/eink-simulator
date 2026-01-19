@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ink Display Simulator</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            font-weight: 300;
+            font-size: 24px;
+        }
+        .display-frame {
+            background: #2d2d44;
+            border-radius: 12px;
+            padding: 20px;
+            display: inline-block;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        #display {
+            border: 2px solid #444;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            -ms-interpolation-mode: nearest-neighbor;
+            transform-origin: top left;
+            display: block;
+        }
+        .controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .control-group {
+            background: #2d2d44;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .control-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 14px;
+        }
+        button {
+            background: #4a90d9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover { background: #3a7bc8; }
+        .scale-buttons { margin-top: 10px; }
+        .scale-buttons button { padding: 5px 12px; font-size: 12px; }
+        .two-col {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        @media (max-width: 800px) {
+            .two-col { grid-template-columns: 1fr; }
+        }
+        pre {
+            background: #2d2d44;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        code { color: #7ec8e3; }
+        .links { margin-top: 20px; }
+        .links a { color: #4a90d9; margin-right: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>E-Ink Display Simulator</h1>
+
+        <div class="two-col">
+            <div>
+                <div class="display-frame">
+                    <canvas id="display"></canvas>
+                </div>
+                <div class="scale-buttons">
+                    <button onclick="setScale(1)">1x</button>
+                    <button onclick="setScale(2)">2x</button>
+                    <button onclick="setScale(3)">3x</button>
+                    <button onclick="setScale(4)">4x</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Demo Scene</label>
+                    <select id="scene" onchange="render()">
+                        <option value="shapes">Basic Shapes</option>
+                        <option value="text">Text Rendering</option>
+                        <option value="graph">Line Graph</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Display Mode</label>
+                    <select id="mode" onchange="render()">
+                        <option value="light">Light (Black on White)</option>
+                        <option value="dark">Dark (White on Black)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="render()">Refresh</button>
+            <button onclick="sim.download()">Download PNG</button>
+            <button onclick="sim.copyToClipboard().then(() => alert('Copied!'))">Copy to Clipboard</button>
+        </div>
+
+        <div class="links">
+            <a href="examples/basic-shapes.html">More Examples</a>
+            <a href="https://github.com/slavik0329/eink-simulator">GitHub</a>
+            <a href="https://www.npmjs.com/package/eink-simulator">npm</a>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3 style="font-weight: 400; margin-bottom: 10px;">Quick Start</h3>
+            <pre><code>&lt;script src="eink-simulator.bundle.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const { EinkSimulator } = window.EinkSimulator;
+  const canvas = document.getElementById('display');
+  const sim = new EinkSimulator(canvas, { width: 296, height: 128 });
+
+  sim.clear();
+  sim.fillRect(10, 10, 50, 30);
+  sim.drawCircle(100, 50, 20);
+  sim.drawText('Hello World', 150, 50);
+&lt;/script&gt;</code></pre>
+        </div>
+    </div>
+
+    <script src="./dist/eink-simulator.bundle.js"></script>
+    <script>
+        const { EinkSimulator } = window.EinkSimulator;
+        let sim;
+        let currentScale = 2;
+
+        function drawShapesDemo() {
+            sim.clear();
+            sim.drawRect(5, 5, 40, 25);
+            sim.fillRect(50, 5, 40, 25);
+            sim.drawCircle(120, 18, 15);
+            sim.fillCircle(160, 18, 15);
+            sim.drawTriangle(190, 30, 210, 5, 230, 30);
+            sim.fillTriangle(240, 30, 260, 5, 280, 30);
+            sim.drawLine(5, 45, 285, 45);
+            sim.drawRoundRect(5, 55, 80, 30, 8);
+            sim.fillRoundRect(95, 55, 80, 30, 8);
+            sim.drawText('E-Ink Simulator Demo', 5, 110);
+        }
+
+        function drawTextDemo() {
+            sim.clear();
+            sim.drawText('Built-in 5x7 font', 5, 10);
+            sim.drawText('ABCDEFGHIJ 0123456789', 5, 25);
+            sim.drawText('abcdefghij !@#$%^&*()', 5, 40);
+            sim.drawText('Left aligned', 5, 60);
+            const text = 'Center aligned';
+            const width = sim.getTextWidth(text);
+            sim.drawText(text, (296 - width) / 2, 75);
+            sim.drawTextRightAligned('Right aligned', 291, 90);
+            sim.drawRect(5, 100, 100, 20);
+            sim.drawTextCentered('Centered', 5, 115, 100);
+        }
+
+        function drawGraphDemo() {
+            sim.clear();
+            const data = [];
+            for (let i = 0; i < 24; i++) {
+                data.push(50 + Math.sin(i * 0.5) * 30 + Math.random() * 10);
+            }
+            const gX = 30, gY = 10, gW = 250, gH = 80;
+            sim.drawLine(gX, gY, gX, gY + gH);
+            sim.drawLine(gX, gY + gH, gX + gW, gY + gH);
+            const minV = Math.min(...data), maxV = Math.max(...data);
+            const range = maxV - minV || 1;
+            for (let i = 0; i < data.length; i++) {
+                const x = gX + (i * gW) / (data.length - 1);
+                const y = gY + gH - ((data[i] - minV) / range) * gH;
+                sim.fillCircle(Math.round(x), Math.round(y), 2);
+                if (i > 0) {
+                    const px = gX + ((i - 1) * gW) / (data.length - 1);
+                    const py = gY + gH - ((data[i - 1] - minV) / range) * gH;
+                    sim.drawLine(Math.round(px), Math.round(py), Math.round(x), Math.round(y));
+                }
+            }
+            sim.drawText('24-Hour Sample Data', 5, 110);
+        }
+
+        function render() {
+            const scene = document.getElementById('scene').value;
+            const mode = document.getElementById('mode').value;
+            const isDark = mode === 'dark';
+
+            sim = new EinkSimulator(document.getElementById('display'), {
+                width: 296,
+                height: 128,
+                foreground: isDark ? '#FFFFFF' : '#000000',
+                background: isDark ? '#000000' : '#FFFFFF'
+            });
+            sim.setScale(currentScale);
+
+            switch (scene) {
+                case 'shapes': drawShapesDemo(); break;
+                case 'text': drawTextDemo(); break;
+                case 'graph': drawGraphDemo(); break;
+            }
+        }
+
+        function setScale(s) {
+            currentScale = s;
+            sim.setScale(s);
+            const frame = document.querySelector('.display-frame');
+            frame.style.width = (296 * s + 44) + 'px';
+            frame.style.height = (128 * s + 44) + 'px';
+        }
+
+        window.onload = function() {
+            render();
+            setScale(currentScale);
+        };
+    </script>
+</body>
+</html>
