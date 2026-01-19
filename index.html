@@ -124,6 +124,7 @@
                     <select id="scene" onchange="render()">
                         <option value="shapes">Basic Shapes</option>
                         <option value="text">Text Rendering</option>
+                        <option value="bitmap">Bitmap Drawing</option>
                         <option value="graph">Line Graph</option>
                     </select>
                 </div>
@@ -145,7 +146,6 @@
         </div>
 
         <div class="links">
-            <a href="examples/basic-shapes.html">More Examples</a>
             <a href="https://github.com/slavik0329/eink-simulator">GitHub</a>
             <a href="https://www.npmjs.com/package/eink-simulator">npm</a>
         </div>
@@ -171,6 +171,14 @@
         const { EinkSimulator } = window.EinkSimulator;
         let sim;
         let currentScale = 2;
+
+        // Sample XBitmap (16x16 smiley face)
+        const smileyBitmap = [
+            0xC0, 0x03, 0x30, 0x0C, 0x08, 0x10, 0x04, 0x20,
+            0x62, 0x46, 0x62, 0x46, 0x02, 0x40, 0x02, 0x40,
+            0x02, 0x40, 0x02, 0x40, 0x22, 0x44, 0x44, 0x22,
+            0x84, 0x21, 0x08, 0x10, 0x30, 0x0C, 0xC0, 0x03
+        ];
 
         function drawShapesDemo() {
             sim.clear();
@@ -224,6 +232,26 @@
             sim.drawText('24-Hour Sample Data', 5, 110);
         }
 
+        function drawBitmapDemo() {
+            sim.clear();
+            sim.drawXBitmap(10, 10, smileyBitmap, 16, 16);
+            sim.drawXBitmap(40, 10, smileyBitmap, 16, 16);
+            sim.drawXBitmap(70, 10, smileyBitmap, 16, 16);
+            sim.drawXBitmapScaled(10, 40, smileyBitmap, 16, 16, 32, 32);
+            sim.drawXBitmapScaled(60, 40, smileyBitmap, 16, 16, 48, 48);
+            for (let y = 10; y < 50; y += 4) {
+                for (let x = 150; x < 280; x += 4) {
+                    if ((x + y) % 8 === 0) {
+                        sim.drawPixel(x, y);
+                        sim.drawPixel(x + 1, y);
+                        sim.drawPixel(x, y + 1);
+                        sim.drawPixel(x + 1, y + 1);
+                    }
+                }
+            }
+            sim.drawText('Bitmap Demo', 5, 110);
+        }
+
         function render() {
             const scene = document.getElementById('scene').value;
             const mode = document.getElementById('mode').value;
@@ -240,6 +268,7 @@
             switch (scene) {
                 case 'shapes': drawShapesDemo(); break;
                 case 'text': drawTextDemo(); break;
+                case 'bitmap': drawBitmapDemo(); break;
                 case 'graph': drawGraphDemo(); break;
             }
         }
